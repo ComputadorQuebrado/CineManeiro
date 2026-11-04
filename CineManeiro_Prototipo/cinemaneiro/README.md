@@ -42,3 +42,9 @@ npm run build
 ```sh
 npm run lint
 ```
+
+### Baixar catálogo do IMDb
+
+```sh
+npm run importar:imdb
+```
