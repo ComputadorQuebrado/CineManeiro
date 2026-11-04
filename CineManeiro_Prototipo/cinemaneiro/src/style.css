@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+    color-scheme: dark;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+        BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #0f202e;
+    color: #f8fafc;
+}
+
+/* Padroniza o cálculo das dimensões */
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+    min-height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    margin: 0;
+    background: #0f202e;
+}
+
+button,
+input,
+select {
+    font: inherit;
+}
+
+/* Pra quando o botão estiver desativado, mudar o cursor, achei bonitinho kakakakak */
+button:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+}
+
+/* Quando o usuário seleciona texto */
+::selection {
+    background: #2563eb;
+    color: white;
+}
+
+/* Scrollbar na direita da página */
+body::-webkit-scrollbar {
+    width: 8px;
+}
+
+/* Caminho da scrollbar */
+body::-webkit-scrollbar-track {
+    background: #0f202e;
+}
+
+/* Botãozinho da scrollbar */
+body::-webkit-scrollbar-thumb {
+    background: #334e68;
+    border-radius: 10px;
+}
+
+/* Quando passa com o mouse por cima do botãozinho da scrollbar */
+body::-webkit-scrollbar-thumb:hover {
+    background: #486581;
+}
+
+/* Campo de seleção */
+select {
+    background-color: #172b3a !important;
+    color: white !important;
+    border: 1px solid #334b60;
+    border-radius: 8px;
+}
+
+/* Opções da lista */
+select option {
+    background-color: #172b3a;
+    color: white;
+}
+
+/* Opção selecionada */
+select option:checked {
+    background-color: #545d64;
+    color: white;
+}
+
+/* Quando passar o mouse ou clicar */
+select:focus {
+    border-color: #facc15 !important;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
+}
+
+/* Caixa de pesquisa */
+input:not([type="checkbox"]):not([type="radio"]) {
+    background: #172b3a !important;
+    background-color: #172b3a !important;
+    color: white !important;
+    border-color: #334b60 !important;
+    color-scheme: dark;
+}
+
+input:not([type="checkbox"]):not([type="radio"]):focus {
+    border-color: #facc15 !important;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
+}
+
+/* Cor do texto de exemplo da pesquisa */
+input:not([type="checkbox"]):not([type="radio"])::placeholder {
+    color: #aab8c5 !important;
+}
+
+/* Cor do texto de exemplo da pesquisa */
+input[type="text"]::placeholder {
+    color: #aab8c5;
+}
+
