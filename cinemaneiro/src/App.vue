@@ -1,12 +1,15 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import { filmes } from './data/filmes'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import DetalhesFilme from './components/DetalhesFilme.vue'
 
 // Vue usa javascript como bnase pro app, dentro dele, tem muita coisa em HTML também, já que é o que monta a página.
 
 // Variáveis que o site vai usar
 
 const usuario = ref(null)
+const filmes = ref([])
+const filmeSelecionado = ref(null)
+const carregandoFilmes = ref(true)
 const listas = ref({ favorites: [], watchLater: [] })
 const pesquisa = ref('')
 const ordem = ref('1')
@@ -16,8 +19,6 @@ const mensagem = ref('')
 const erro = ref('')
 const carregando = ref(false)
 const form = ref({ usuario: '', email: '', senha: '', identificador: '' })
-
-/* WIP, admin ainda não possui uma função definida. */
 
 const adminToken = window.location.pathname.startsWith('/cadastro-admin/')
   ? decodeURIComponent(window.location.pathname.split('/').filter(Boolean).at(-1) || '')
@@ -42,6 +43,18 @@ async function api(url, options = {}) {
   return data
 }
 
+
+async function carregarFilmes() { // Busca os filmes no banco, chega de importar aquele arquivo gigante aqui no Vue.
+  carregandoFilmes.value = true
+  try {
+    const data = await api('/api/movies')
+    filmes.value = data.filmes || []
+  } catch (e) {
+    erro.value = e.message
+  } finally {
+    carregandoFilmes.value = false
+  }
+}
 
 /*
   Função que confere o cookie do navegador pra conferir se já existe sessão, se sim, segue com a sessão.
@@ -170,7 +183,7 @@ async function alternarLista(tipo, id) {
 }
 
 const filmesExibidos = computed(() => {
-  let resultado = filmes.filter(filme =>
+  let resultado = filmes.value.filter(filme =>
     filme.titulo.toLocaleLowerCase('pt-BR').includes(pesquisa.value.toLocaleLowerCase('pt-BR').trim())
     /*
       Essa linha contém o mecanismo de pesquisa, como funciona? Ela filtra dentro da lista de filmes por títulos que contém o conteúdo da barra de pesquisa
@@ -208,7 +221,54 @@ const filmesExibidos = computed(() => {
   return resultado
 })
 
-onMounted(carregarSessao) // Carrega a sessão quando a tela é montada.
+// Vamos guardar a tela atual no histórico pra tecla de voltar não mandar o usuário embora do site.
+function abrirDetalhes(filme) {
+  if (!filme) return
+
+  const endereco = `${window.location.pathname}${window.location.search}#filme-${encodeURIComponent(filme.id)}`
+  window.history.pushState({ ...(window.history.state || {}), cinePagina: 'detalhes', filmeId: filme.id }, '', endereco)
+  filmeSelecionado.value = filme
+  window.scrollTo({ top: 0, behavior: 'auto' })
+}
+
+function voltarDoDetalhe() {
+  if (window.history.state?.cinePagina === 'detalhes') {
+    window.history.back()
+    return
+  }
+
+  filmeSelecionado.value = null
+}
+
+function sincronizarComHistorico() {
+  const estado = window.history.state
+
+  if (estado?.cinePagina === 'detalhes' && estado.filmeId) {
+    filmeSelecionado.value = filmes.value.find(filme => filme.id === estado.filmeId) || null
+    return
+  }
+
+  filmeSelecionado.value = null
+}
+
+onMounted(() => {
+  if (!paginaAdmin) {
+    const estadoAtual = window.history.state || {}
+    window.history.replaceState(
+      { ...estadoAtual, cinePagina: 'catalogo' },
+      '',
+      `${window.location.pathname}${window.location.search}`
+    )
+    window.addEventListener('popstate', sincronizarComHistorico)
+  }
+
+  carregarSessao()
+  carregarFilmes()
+}) // Carrega a sessão e os filmes quando a tela é montada.
+
+onBeforeUnmount(() => {
+  window.removeEventListener('popstate', sincronizarComHistorico)
+})
 
 /*
   E tome HTML
@@ -260,6 +320,14 @@ onMounted(carregarSessao) // Carrega a sessão quando a tela é montada.
           {{ erro }} <button class="float-right" @click="erro = ''">✕</button>
         </div>
 
+        <DetalhesFilme
+          v-if="filmeSelecionado"
+          :filme="filmeSelecionado"
+          :usuario="usuario"
+          @voltar="voltarDoDetalhe"
+          @pedir-login="modal = 'login'; erro = ''"
+        />
+        <template v-else>
         <section class="mb-7 grid grid-cols-1 items-end gap-4 md:grid-cols-12">
           <div class="md:col-span-9">
             <label for="pesquisa" class="mb-2 block font-bold">Catálogo de Filmes</label>
@@ -322,7 +390,7 @@ onMounted(carregarSessao) // Carrega a sessão quando a tela é montada.
               nota do filme
               número de votos no IMDB
               Os botões de favoritar e assistir mais tarde
-              E um botão de detalhes que leva o usuário para a página do IMDB, considero fazer uma página com os detalhes dentro do site também.
+              E agora o botão de detalhes abre a página aqui dentro mesmo, finalmente saiu do papel.
           -->
           <article v-for="(filme, index) in filmesExibidos" :key="filme.id" class="overflow-hidden rounded-xl border border-slate-700/70 bg-slate-900 shadow-lg transition hover:-translate-y-1 hover:border-slate-500">
             <div class="relative">
@@ -333,7 +401,7 @@ onMounted(carregarSessao) // Carrega a sessão quando a tela é montada.
                 class="h-64 w-full bg-slate-800 object-cover sm:h-72"
                 @error="$event.target.src = 'https://placehold.co/400x600/1e293b/ffffff?text=Poster+Indisponivel'"
               >
-              <span class="absolute left-2 top-2 rounded bg-yellow-600 px-2 py-1 text-xs font-bold">#{{ filmes.findIndex(item => item.id === filme.id) + 1 }}</span>
+              <span class="absolute left-2 top-2 rounded bg-yellow-600 px-2 py-1 text-xs font-bold">#{{ filme.posicao || index + 1 }}</span>
             </div>
             <div class="flex min-h-44 flex-col p-3">
               <h2 class="truncate font-bold" :title="filme.titulo">{{ filme.titulo }}</h2>
@@ -348,13 +416,15 @@ onMounted(carregarSessao) // Carrega a sessão quando a tela é montada.
                   {{ possui('watchLater', filme.id) ? '✓ Na lista' : '+ Assistir' }}
                 </button>
               </div>
-              <a :href="`https://www.imdb.com/title/${filme.id}/`" target="_blank" rel="noopener noreferrer" class="mt-2 rounded-lg bg-yellow-600 px-3 py-2 text-center text-sm font-semibold hover:bg-yellow-400">Detalhes</a>
+              <button type="button" @click="abrirDetalhes(filme)" class="mt-2 rounded-lg bg-yellow-500 px-3 py-2 text-center text-sm font-semibold text-slate-950 hover:bg-yellow-400">Detalhes</button>
             </div>
           </article>
         </section>
+        <p v-else-if="carregandoFilmes" class="py-16 text-center text-slate-400">Carregando filmes...</p>
         <p v-else class="py-16 text-center text-slate-400">
           {{ aba === 'favoritos' ? 'Você ainda não favoritou nenhum filme.' : aba === 'assistir' ? 'Sua lista de filmes para assistir está vazia.' : 'Nenhum filme encontrado.' }}
         </p>
+        </template>
       </div>
 
       <div v-if="modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" @click.self="modal = ''; erro = ''">

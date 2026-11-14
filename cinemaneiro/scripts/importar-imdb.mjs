@@ -1,11 +1,12 @@
 import { createWriteStream, createReadStream } from 'node:fs'
-import { mkdir, stat, writeFile } from 'node:fs/promises'
+import { mkdir, stat } from 'node:fs/promises'
 import { pipeline } from 'node:stream/promises'
 import { Readable } from 'node:stream'
 import { createGunzip } from 'node:zlib'
 import { createInterface } from 'node:readline'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { Movie } from '../server/models/Movie.js'
 
 /*
   Bom, a ideia aqui é simples, fazer um script que baixa, os dados do imdb e monta o catálogo dos filmes.
@@ -19,7 +20,6 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dataDir = path.join(root, 'data-imdb')
 const basicsFile = path.join(dataDir, 'title.basics.tsv.gz')
 const ratingsFile = path.join(dataDir, 'title.ratings.tsv.gz')
-const outputFile = path.join(root, 'src', 'data', 'filmes.js')
 const MIN_VOTES = 25_000
 const LIMIT = 1_000
 
@@ -97,8 +97,7 @@ filmes.sort((a, b) => b.nota - a.nota || b.votos - a.votos || a.titulo.localeCom
 const top = filmes.slice(0, LIMIT)
 if (top.length < LIMIT) throw new Error(`Foram encontrados apenas ${top.length} filmes; esperado: ${LIMIT}.`)
 
-const conteudo = `// Gerado em ${new Date().toISOString().slice(0, 10)} a partir dos datasets oficiais do IMDb.\n// Uso pessoal e não comercial. Consulte os termos do IMDb antes de publicar ou redistribuir.\nexport const filmes = ${JSON.stringify(top, null, 2)}\n`
-await writeFile(outputFile, conteudo, 'utf8')
-console.log(`\nConcluído! ${top.length} filmes importados para src/data/filmes.js.`)
+await Movie.importMany(top)
+console.log(`\nConcluído! ${top.length} filmes importados direto para o banco SQLite.`)
 console.log(`Primeiro colocado: ${top[0].titulo} (${top[0].ano}) — ${top[0].nota} (${top[0].votos.toLocaleString('pt-BR')} votos)`)
-console.log('Reinicie o projeto com: npm run dev')
+console.log('Os filmes já estão no banco. Não precisa mexer em arquivo JSON nem reiniciar o Vite.')
