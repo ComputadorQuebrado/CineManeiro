@@ -54,3 +54,7 @@ Faça backup de `data/cinemaneiro.sqlite` antes de mexer no banco ou atualizar o
 npm run build
 npm start
 ```
+
+### Cadastrar um admin:
+
+http://localhost:5173/cadastro-admin/abcdefghijklmnopqrstuvwxyz
