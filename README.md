@@ -15,5 +15,3 @@
 - `server/seeds/filmes.sql`: carga inicial em SQL, usada só se a tabela `movies` estiver vazia.
 - `data/cinemaneiro.sqlite`: banco de verdade, onde os filmes e os outros dados ficam salvos.
 
-
-###### chatgpt é um verdadeiro herói
